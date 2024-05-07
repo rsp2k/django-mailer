@@ -38,7 +38,7 @@ def postgres_send_loop():
     conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
     curs = conn.cursor()
-    install_trigger(curs, dj_conn)
+    install_function_and_trigger(curs, dj_conn)
     curs.execute(f"LISTEN {CHANNEL};")
     logger.debug(f"Waiting for notifications on channel '{CHANNEL}'")
 
@@ -53,15 +53,16 @@ def postgres_send_loop():
     else:
         beat_thread = None
 
+    RUNNING = True
     def signal_handler(signal, frame):
         logger.debug("Received SIGINT, shutting down")
-        clean_up()
+        RUNNING = False
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
 
     SELECT_TIMEOUT = 5
-    while True:
+    while RUNNING:
         if select.select([conn], [], [], SELECT_TIMEOUT) == ([], [], []):
             # timeout
             pass
@@ -112,14 +113,18 @@ def postgres_send_loop():
         if beat_thread is not None:
             beat_thread.join()
 
+        remove_function_and_trigger(curs, dj_conn)
+
     clean_up()
 
 
-def install_trigger(curs, dj_conn):
+FUNCTION_NAME = "django_mailer_notify_new_message()"
+TRIGGER_NAME = "django_mailer_message_notify_trigger"
+def install_function_and_trigger(curs, dj_conn):
     message_table_name = Message._meta.db_table
     curs.execute(
         f"""
-    CREATE OR REPLACE FUNCTION django_mailer_notify_new_message()
+    CREATE OR REPLACE FUNCTION {FUNCTION_NAME}
     RETURNS TRIGGER AS $$
     BEGIN
       PERFORM pg_notify('{CHANNEL}', NEW.id::text);
@@ -135,15 +140,24 @@ def install_trigger(curs, dj_conn):
         f"""
     DO $$
     BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'django_mailer_message_notify_trigger') THEN
-        CREATE TRIGGER django_mailer_message_notify_trigger
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = '{TRIGGER_NAME}') THEN
+        CREATE TRIGGER {TRIGGER_NAME}
         AFTER INSERT ON {dj_conn.ops.quote_name(message_table_name)}
-        FOR EACH ROW EXECUTE FUNCTION django_mailer_notify_new_message();
+        FOR EACH ROW EXECUTE FUNCTION {FUNCTION_NAME};
       END IF;
     END $$;
     """
     )
 
+
+def remove_function_and_trigger(curs, dj_conn):
+    message_table_name = Message._meta.db_table
+    curs.execute(
+        f"""DROP FUNCTION {FUNCTION_NAME};"""
+    )
+    curs.execute(
+        f"""DROP TRIGGER {TRIGGER_NAME};"""
+    )
 
 def worker():
     while True:
