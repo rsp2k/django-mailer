@@ -1,6 +1,8 @@
 import logging
 import queue
 import select
+import signal
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -54,7 +56,9 @@ def postgres_send_loop():
         beat_thread = None
 
     RUNNING = True
+
     def signal_handler(signal, frame):
+        global RUNNING
         logger.debug("Received SIGINT, shutting down")
         RUNNING = False
         sys.exit(0)
