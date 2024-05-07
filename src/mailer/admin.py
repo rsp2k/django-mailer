@@ -1,4 +1,5 @@
 from django.contrib import admin, messages
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from mailer.engine import send_all
@@ -26,18 +27,32 @@ show_subject.short_description = "Subject"  # noqa: E305
 
 
 class MessageAdminMixin:
-    def plain_text_body(self, instance):
+
+    def _body(self, instance, type):
         email = instance.email
-        if hasattr(email, "body"):
-            return email.body
-        else:
+
+        body = email.get_body(
+                preferencelist=(type, )
+            )
+        if not body:
             return "<Can't decode>"
+
+        return body
+
+    def plain_text_body(self, instance):
+        return self._body(instance, 'plain')
+
+    def html_body(self, instance):
+        return mark_safe(self._body(instance, 'html'))
+
+    def related_body(self, instance):
+        return self._body(instance, 'related')
 
 
 class MessageAdmin(MessageAdminMixin, admin.ModelAdmin):
 
     list_display = ["id", show_to, "subject", "when_added", "priority", "retry_count"]
-    readonly_fields = ["plain_text_body"]
+    readonly_fields = ["plain_text_body", "html_body", "related_body"]
     date_hierarchy = "when_added"
     actions = ["send_messages"]
 
