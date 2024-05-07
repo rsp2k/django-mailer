@@ -265,6 +265,11 @@ def send_loop():
     Loop indefinitely, checking queue at intervals of EMPTY_QUEUE_SLEEP and
     sending messages if any are on queue.
     """
+    def signal_handler(signal, frame):
+        print("\nprogram exiting gracefully")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
 
     while True:
         while not Message.objects.non_deferred().exists():
