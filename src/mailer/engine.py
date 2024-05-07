@@ -1,6 +1,8 @@
 import contextlib
 import logging
+import signal
 import smtplib
+import sys
 import time
 from socket import error as socket_error
 
@@ -266,7 +268,7 @@ def send_loop():
     sending messages if any are on queue.
     """
     def signal_handler(signal, frame):
-        print("\nprogram exiting gracefully")
+        logger.debug("Received SIGINT. Exiting gracefully")
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
