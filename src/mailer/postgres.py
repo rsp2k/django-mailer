@@ -55,7 +55,7 @@ def postgres_send_loop():
 
     def signal_handler(signal, frame):
         logger.debug("Received SIGINT, shutting down")
-        print("\nprogram exiting gracefully")
+        clean_up()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -106,10 +106,13 @@ def postgres_send_loop():
                 # nothing another 99 times afterwards.
                 logger.debug("Discarding item %r as work queue is not empty", last)
 
-    # Clean up:
-    worker_thread.join()
-    if beat_thread is not None:
-        beat_thread.join()
+    def clean_up():
+        # Clean up:
+        worker_thread.join()
+        if beat_thread is not None:
+            beat_thread.join()
+
+    clean_up()
 
 
 def install_trigger(curs, dj_conn):
