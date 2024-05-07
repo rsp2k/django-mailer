@@ -53,6 +53,13 @@ def postgres_send_loop():
     else:
         beat_thread = None
 
+    def signal_handler(signal, frame):
+        logger.debug("Received SIGINT, shutting down")
+        print("\nprogram exiting gracefully")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
     SELECT_TIMEOUT = 5
     while True:
         if select.select([conn], [], [], SELECT_TIMEOUT) == ([], [], []):
