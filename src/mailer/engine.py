@@ -235,7 +235,10 @@ def send_all(queryset=None):
                             f"message discarded due to failure in converting from DB. Added on "
                             f"'{message.when_added}' with priority '{message.priority}'"
                         )  # noqa
-                    message.delete()
+
+                    preserve_messages = getattr(settings, "MAILER_PRESERVE_MESSAGES", False)
+                    if not preserve_messages:
+                        message.delete()
 
                 except Exception as err:
                     connection, action_taken = error_handler(connection, message, err)
