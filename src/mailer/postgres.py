@@ -22,6 +22,7 @@ notify_q = queue.Queue()
 
 CHANNEL = "django_mailer_new_message"
 
+RUNNING = False
 
 def postgres_send_loop():
     """
@@ -58,6 +59,7 @@ def postgres_send_loop():
     RUNNING = True
 
     def signal_handler(signal, frame):
+        global RUNNING
         logger.debug("Received SIGINT, shutting down")
         RUNNING = False
         sys.exit(0)
