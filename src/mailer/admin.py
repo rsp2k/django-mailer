@@ -6,26 +6,6 @@ from mailer.engine import send_all
 from mailer.models import DontSendEntry, Message, MessageLog
 
 
-def show_to(message):
-    if message.email:
-        return ", ".join(message.to_addresses)
-    else:
-        return "<Message data unavailable>"
-
-
-show_to.short_description = "To"  # noqa: E305
-
-
-def show_subject(message):
-    if message.email:
-        return message.subject
-    else:
-        return "<Message data unavailable>"
-
-
-show_subject.short_description = "Subject"  # noqa: E305
-
-
 class MessageAdminMixin:
 
     def _body(self, instance, type):
@@ -51,7 +31,7 @@ class MessageAdminMixin:
 
 class MessageAdmin(MessageAdminMixin, admin.ModelAdmin):
 
-    list_display = ["id", show_to, "subject", "when_added", "priority", "retry_count"]
+    list_display = ["id", "show_to", "subject", "when_added", "priority", "retry_count"]
     readonly_fields = ["plain_text_body", "html_body", "related_body"]
     date_hierarchy = "when_added"
     actions = ["send_messages"]
@@ -68,7 +48,7 @@ class DontSendEntryAdmin(admin.ModelAdmin):
 
 class MessageLogAdmin(MessageAdminMixin, admin.ModelAdmin):
 
-    list_display = ["id", show_to, show_subject, "message_id", "when_attempted", "result"]
+    list_display = ["id", "show_to", "show_subject", "message_id", "when_attempted", "result"]
     list_filter = ["result"]
     date_hierarchy = "when_attempted"
     readonly_fields = ["plain_text_body", "message_id"]

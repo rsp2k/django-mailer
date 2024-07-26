@@ -170,6 +170,22 @@ set the attribute again to cause the underlying serialised data to be updated.""
         else:
             return ""
 
+    def show_to(self):
+        if self.email:
+            return ", ".join(self.to_addresses)
+        else:
+            return "<Message data unavailable>"
+
+    show_to.short_description = "To"  # noqa: E305
+
+    def show_subject(self):
+        if self.email:
+            return self.subject
+        else:
+            return "<Message data unavailable>"
+
+    show_subject.short_description = "Subject"  # noqa: E305
+
 
 def filter_recipient_list(lst):
     if lst is None:
@@ -319,3 +335,19 @@ class MessageLog(BigAutoModel):
             return email.subject
         else:
             return None
+
+    def show_to(self):
+        if self.email:
+            return ", ".join(message.to_addresses)
+        else:
+            return "<Message data unavailable>"
+
+    show_to.short_description = "To"  # noqa: E305
+
+    def show_subject(self):
+        if self.email:
+            return message.subject
+        else:
+            return "<Message data unavailable>"
+
+    show_subject.short_description = "Subject"  # noqa: E305
