@@ -236,9 +236,8 @@ def send_all(queryset=None):
                             f"'{message.when_added}' with priority '{message.priority}'"
                         )  # noqa
 
-                    preserve_messages = getattr(settings, "MAILER_PRESERVE_MESSAGES", False)
-                    if not preserve_messages:
-                        message.delete()
+
+                    message.delete()
 
                 except Exception as err:
                     connection, action_taken = error_handler(connection, message, err)
